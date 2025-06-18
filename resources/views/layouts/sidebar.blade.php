@@ -62,21 +62,21 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="" class="nav-link">
+                <a href="{{ route('dashboard') }}" class="nav-link">
                     <span class="sidebar-icon"><i class="fas fa-home"></i></span>
                     <span class="sidebar-text">Dashboard</span>
                 </a>
             </li>
 
             <li class="nav-item">
-                <a href="" class="nav-link">
+                <a href="{{ route('distributor.index') }}" class="nav-link">
                     <span class="sidebar-icon"><i class="fas fa-truck"></i></span>
                     <span class="sidebar-text">Distributor</span>
                 </a>
             </li>
 
             <li class="nav-item">
-                <a href="" class="nav-link">
+                <a href="{{ route('faktur.index') }}" class="nav-link">
                     <span class="sidebar-icon"><i class="fas fa-file-invoice"></i></span>
                     <span class="sidebar-text">Faktur</span>
                 </a>
