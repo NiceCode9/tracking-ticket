@@ -37,6 +37,58 @@
 
     <div class="card shadow border-0 mb-4">
         <div class="card-header">
+            <h5 class="mb-0">Filter Data</h5>
+        </div>
+        <div class="card-body">
+            <form id="filter-form">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label for="filter_distributor" class="form-label">Distributor</label>
+                            <select name="filter_distributor" id="filter_distributor" class="form-control">
+                                <option value="">Semua Distributor</option>
+                                @foreach ($distributors as $distributor)
+                                    <option value="{{ $distributor->id }}">{{ $distributor->nama }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label for="filter_status" class="form-label">Status</label>
+                            <select name="filter_status" id="filter_status" class="form-control">
+                                <option value="">Semua Status</option>
+                                @foreach (\App\Models\Faktur::$statusLabels as $key => $value)
+                                    <option value="{{ $key }}">{{ $value }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label for="filter_from" class="form-label">Tanggal Faktur Dari</label>
+                            <input type="date" class="form-control" id="filter_from" name="filter_from">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label for="filter_to" class="form-label">Tanggal Faktur Sampai</label>
+                            <input type="date" class="form-control" id="filter_to" name="filter_to">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <button type="button" class="btn btn-primary" id="btn-filter">Filter</button>
+                        <button type="button" class="btn btn-secondary" id="btn-reset">Reset</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow border-0 mb-4">
+        <div class="card-header">
             <h5 class="mb-0">Daftar Faktur</h5>
         </div>
         <div class="card-body">
@@ -61,4 +113,113 @@
 @endsection
 
 @push('scripts')
+    <script>
+        $(document).ready(function() {
+            let table = $('#dist-table').DataTable({
+                serverSide: true,
+                processing: true,
+                ajax: {
+                    url: "{{ route('faktur.index') }}",
+                    data: function(d) {
+                        d.distributor_id = $('#filter_distributor').val();
+                        d.status = $('#filter_status').val();
+                        d.from_date = $('#filter_from').val();
+                        d.to_date = $('#filter_to').val();
+                    }
+                },
+                order: [
+                    [2, 'asc']
+                ],
+                columns: [{
+                        data: 'DT_RowIndex',
+                        name: 'DT_RowIndex',
+                        orderable: false,
+                        searchable: false,
+                    },
+                    {
+                        data: 'no_faktur',
+                        nama: 'no_faktur',
+                    },
+                    {
+                        data: 'distributor.nama',
+                        nama: 'distributor.nama',
+                    },
+                    {
+                        data: 'tgl_faktur',
+                        nama: 'tgl_faktur',
+                    },
+                    {
+                        data: 'tgl_jatuh_tempo',
+                        nama: 'tgl_jatuh_tempo',
+                    },
+                    {
+                        data: 'tgl_tanda_terima',
+                        nama: 'tgl_tanda_terima',
+                    },
+                    {
+                        data: 'status',
+                        nama: 'status',
+                    },
+                    {
+                        data: 'action',
+                        nama: 'action',
+                        orderable: false,
+                        searchable: false,
+                    },
+                ]
+            });
+
+            $(document).on('click', '.btn-delete', function() {
+                let id = $(this).data('id');
+
+                Swal.fire({
+                    title: 'Apakah anda yakin?',
+                    text: "Data yang dihapus tidak dapat dikembalikan!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: `/faktur/${id}`,
+                            method: 'DELETE',
+                            data: {
+                                _token: '{{ csrf_token() }}'
+                            },
+                            success: function(response) {
+                                table.ajax.reload();
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Sukses',
+                                    text: response.message
+                                });
+                            },
+                            error: function(xhr) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: xhr.responseJSON.message
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Handle filter button click
+            $('#btn-filter').click(function() {
+                table.draw();
+            });
+
+            // Handle reset button click
+            $('#btn-reset').click(function() {
+                $('#filter_distributor').val('');
+                $('#filter_status').val('');
+                $('#filter_from').val('');
+                $('#filter_to').val('');
+                table.draw();
+            });
+        });
+    </script>
 @endpush

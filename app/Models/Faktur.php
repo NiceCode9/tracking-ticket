@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Faktur extends Model
 {
@@ -14,6 +15,7 @@ class Faktur extends Model
         'tgl_jatuh_tempo',
         'tgl_tanda_terima',
         'nominal',
+        'bukti_path',
         'status',
     ];
 
@@ -35,6 +37,11 @@ class Faktur extends Model
         self::STATUS_JADWAL_ULANG => 'Jadwal Ulang',
         self::STATUS_TERBAYAR => 'Terbayar',
     ];
+
+    public function logs(): HasMany
+    {
+        return $this->hasMany(LogFaktur::class)->latest();
+    }
 
     public function getStatusLabelAttribute(): string
     {

@@ -2,15 +2,19 @@
 
 use App\Http\Controllers\DistributorController;
 use App\Http\Controllers\FakturController;
+use App\Http\Controllers\FrontController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Route::get('/', function () {
+//     return view('dashboard');
+// });
+
+Route::get('/', [FrontController::class, 'index'])->name('home');
+Route::get('/api/faktur/search', [FrontController::class, 'search'])->middleware('web')->name('faktur.search');
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    // return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
