@@ -15,6 +15,75 @@ class FakturController extends Controller
     /**
      * Display a listing of the resource.
      */
+    // public function index(Request $request)
+    // {
+    //     if ($request->ajax()) {
+    //         $query = Faktur::with('distributor');
+
+    //         // Filter by distributor
+    //         if ($request->has('distributor_id') && $request->distributor_id != '') {
+    //             $query->where('distributor_id', $request->distributor_id);
+    //         }
+
+    //         // Filter by status
+    //         if ($request->has('status') && $request->status != '') {
+    //             $query->where('status', $request->status);
+    //         }
+
+    //         // Filter by date range
+    //         if ($request->has('from_date') && $request->from_date != '') {
+    //             $query->whereDate('tgl_faktur', '>=', $request->from_date);
+    //         }
+    //         if ($request->has('to_date') && $request->to_date != '') {
+    //             $query->whereDate('tgl_faktur', '<=', $request->to_date);
+    //         }
+
+    //         $data = $query->get();
+
+    //         return DataTables::of($data)
+    //             ->addIndexColumn()
+    //             ->addColumn('tgl_faktur', function ($row) {
+    //                 return Carbon::parse($row->tgl_faktur)->translatedFormat('d F Y');
+    //             })
+    //             ->addColumn('tgl_jatuh_tempo', function ($row) {
+    //                 return Carbon::parse($row->tgl_jatuh_tempo)->translatedFormat('d F Y');
+    //             })
+    //             ->addColumn('tgl_tanda_terima', function ($row) {
+    //                 return Carbon::parse($row->tgl_tanda_terima)->translatedFormat('d F Y');
+    //             })
+    //             ->addColumn('status', function ($row) {
+    //                 $badgeClass = match ($row->status) {
+    //                     Faktur::STATUS_BELUM_TERJADWAL => 'bg-secondary',
+    //                     Faktur::STATUS_TERJADWAL => 'bg-primary',
+    //                     Faktur::STATUS_JADWAL_ULANG => 'bg-warning',
+    //                     Faktur::STATUS_TERBAYAR => 'bg-success',
+    //                     default => 'bg-light'
+    //                 };
+
+    //                 return sprintf(
+    //                     '<span class="badge %s">%s</span>',
+    //                     $badgeClass,
+    //                     $row->status_label
+    //                 );
+    //             })
+    //             ->addColumn('action', function ($row) {
+    //                 $btn = '
+    //                     <a href="' . route('faktur.edit', $row->id) . '" class="btn btn-sm btn-warning me-1 btn-edit" data-id="' . $row->id . '">
+    //                         <i class="fas fa-edit"></i>
+    //                     </a>
+    //                     <button type="button" class="btn btn-sm btn-danger btn-delete" data-id="' . $row->id . '">
+    //                         <i class="fas fa-trash"></i>
+    //                     </button>
+    //                 ';
+    //                 return $btn;
+    //             })
+    //             ->rawColumns(['status', 'action'])
+    //             ->make(true);
+    //     }
+    //     $distributors = Distributor::orderBy('nama', 'ASC')->get();
+    //     return view('admin.faktur.index', compact('distributors'));
+    // }
+
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -27,15 +96,30 @@ class FakturController extends Controller
 
             // Filter by status
             if ($request->has('status') && $request->status != '') {
-                $query->where('status', $request->status);
+                if ($request->status == 'upcoming') {
+                    // Special filter for upcoming due invoices
+                    $query->where('tgl_jatuh_tempo', '<=', Carbon::now()->addDays(7))
+                        ->where('tgl_jatuh_tempo', '>=', Carbon::now())
+                        ->where('status', '!=', Faktur::STATUS_TERBAYAR);
+                } else {
+                    $query->where('status', $request->status);
+                }
             }
 
-            // Filter by date range
-            if ($request->has('from_date') && $request->from_date != '') {
-                $query->whereDate('tgl_faktur', '>=', $request->from_date);
+            // Filter by invoice date (tgl_faktur)
+            if ($request->has('invoice_from') && $request->invoice_from != '') {
+                $query->whereDate('tgl_faktur', '>=', $request->invoice_from);
             }
-            if ($request->has('to_date') && $request->to_date != '') {
-                $query->whereDate('tgl_faktur', '<=', $request->to_date);
+            if ($request->has('invoice_to') && $request->invoice_to != '') {
+                $query->whereDate('tgl_faktur', '<=', $request->invoice_to);
+            }
+
+            // Filter by due date (tgl_jatuh_tempo)
+            if ($request->has('due_from') && $request->due_from != '') {
+                $query->whereDate('tgl_jatuh_tempo', '>=', $request->due_from);
+            }
+            if ($request->has('due_to') && $request->due_to != '') {
+                $query->whereDate('tgl_jatuh_tempo', '<=', $request->due_to);
             }
 
             $data = $query->get();

@@ -58,6 +58,7 @@
                             <label for="filter_status" class="form-label">Status</label>
                             <select name="filter_status" id="filter_status" class="form-control">
                                 <option value="">Semua Status</option>
+                                <option value="upcoming">Akan Jatuh Tempo</option>
                                 @foreach (\App\Models\Faktur::$statusLabels as $key => $value)
                                     <option value="{{ $key }}">{{ $value }}</option>
                                 @endforeach
@@ -66,21 +67,39 @@
                     </div>
                     <div class="col-md-3">
                         <div class="mb-3">
-                            <label for="filter_from" class="form-label">Tanggal Faktur Dari</label>
-                            <input type="date" class="form-control" id="filter_from" name="filter_from">
+                            <label for="filter_invoice_from" class="form-label">Tanggal Faktur Dari</label>
+                            <input type="date" class="form-control" id="filter_invoice_from" name="filter_invoice_from">
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="mb-3">
-                            <label for="filter_to" class="form-label">Tanggal Faktur Sampai</label>
-                            <input type="date" class="form-control" id="filter_to" name="filter_to">
+                            <label for="filter_invoice_to" class="form-label">Tanggal Faktur Sampai</label>
+                            <input type="date" class="form-control" id="filter_invoice_to" name="filter_invoice_to">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label for="filter_due_from" class="form-label">Tanggal Jatuh Tempo Dari</label>
+                            <input type="date" class="form-control" id="filter_due_from" name="filter_due_from">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label for="filter_due_to" class="form-label">Tanggal Jatuh Tempo Sampai</label>
+                            <input type="date" class="form-control" id="filter_due_to" name="filter_due_to">
                         </div>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-md-12">
                         <button type="button" class="btn btn-primary" id="btn-filter">Filter</button>
-                        <button type="button" class="btn btn-secondary" id="btn-reset">Reset</button>
+                        @if (request('status') == 'upcoming')
+                            <a href="{{ route('faktur.index') }}" class="btn btn-secondary">Reset</a>
+                        @else
+                            <button type="button" class="btn btn-secondary" id="btn-reset">Reset</button>
+                        @endif
                     </div>
                 </div>
             </form>
@@ -115,6 +134,11 @@
 @push('scripts')
     <script>
         $(document).ready(function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const statusParam = urlParams.get('status');
+            const dueFromParam = urlParams.get('due_from');
+            const dueToParam = urlParams.get('due_to');
+
             let table = $('#dist-table').DataTable({
                 serverSide: true,
                 processing: true,
@@ -123,12 +147,21 @@
                     data: function(d) {
                         d.distributor_id = $('#filter_distributor').val();
                         d.status = $('#filter_status').val();
-                        d.from_date = $('#filter_from').val();
-                        d.to_date = $('#filter_to').val();
+                        d.invoice_from = $('#filter_invoice_from').val();
+                        d.invoice_to = $('#filter_invoice_to').val();
+                        d.due_from = $('#filter_due_from').val();
+                        d.due_to = $('#filter_due_to').val();
+
+                        // Apply filter from URL if exists
+                        if (statusParam === 'upcoming') {
+                            d.status = 'upcoming';
+                            d.due_from = dueFromParam;
+                            d.due_to = dueToParam;
+                        }
                     }
                 },
                 order: [
-                    [2, 'asc']
+                    [3, 'asc']
                 ],
                 columns: [{
                         data: 'DT_RowIndex',
@@ -168,6 +201,12 @@
                     },
                 ]
             });
+
+            if (statusParam === 'upcoming') {
+                $('#filter_status').val('upcoming');
+                $('#filter_due_from').val(dueFromParam);
+                $('#filter_due_to').val(dueToParam);
+            }
 
             $(document).on('click', '.btn-delete', function() {
                 let id = $(this).data('id');
@@ -212,12 +251,13 @@
                 table.draw();
             });
 
-            // Handle reset button click
             $('#btn-reset').click(function() {
                 $('#filter_distributor').val('');
                 $('#filter_status').val('');
-                $('#filter_from').val('');
-                $('#filter_to').val('');
+                $('#filter_invoice_from').val('');
+                $('#filter_invoice_to').val('');
+                $('#filter_due_from').val('');
+                $('#filter_due_to').val('');
                 table.draw();
             });
         });
