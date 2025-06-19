@@ -200,7 +200,7 @@
                         searchable: false,
                         render: function(data, type, row) {
                             let buttons = `
-                                <a href="${row.edit_url}" class="btn btn-sm btn-warning me-1 btn-edit" data-id="${row.id}">
+                                <a href="/faktur/${row.id}/edit" class="btn btn-sm btn-warning me-1 btn-edit" data-id="${row.id}">
                                     <i class="fas fa-edit"></i>
                                 </a>
                             `;
