@@ -35,14 +35,11 @@
                         <i data-feather="activity" class="w-6 h-6 text-white"></i>
                     </div>
                     <div>
-                        <h1 class="text-white font-bold text-xl">RS Tracking</h1>
+                        <h1 class="text-white font-bold text-xl">SIBOBA</h1>
                         <p class="text-white text-opacity-80 text-sm">Sistem Pelacakan Faktur</p>
                     </div>
                 </div>
                 <div class="hidden md:flex items-center space-x-6 text-white text-opacity-90">
-                    <a href="#" class="hover:text-white transition-colors">Beranda</a>
-                    <a href="#" class="hover:text-white transition-colors">Bantuan</a>
-                    <a href="#" class="hover:text-white transition-colors">Kontak</a>
                 </div>
             </div>
         </div>
@@ -57,7 +54,7 @@
                     Lacak Status Faktur Anda
                 </h2>
                 <p class="text-xl text-white text-opacity-90 mb-8 max-w-2xl mx-auto">
-                    Dapatkan informasi real-time mengenai status pembayaran dan jadwal faktur distributor obat
+                    Dapatkan informasi real-time mengenai status pembayaran dan jadwal faktur
                 </p>
             </div>
 
@@ -193,6 +190,13 @@
                                 <label class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Status
                                     Pembayaran</label>
                                 <p id="payment-status" class="text-lg font-semibold text-blue-600">Terjadwal</p>
+                            </div>
+                            <div id="download-section" class="hidden">
+                                <button onclick="downloadBuktiBayar()"
+                                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors flex items-center justify-center space-x-2">
+                                    <i data-feather="download" class="w-5 h-5"></i>
+                                    <span>Download Bukti Bayar</span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -402,11 +406,22 @@
             };
             const statusBadge = document.getElementById('status-badge');
             const paymentStatus = document.getElementById('payment-status');
+            const downloadSection = document.getElementById('download-section');
 
             statusBadge.className = `px-4 py-2 rounded-full text-sm font-semibold ${status.class}`;
             statusBadge.textContent = status.label;
             paymentStatus.textContent = status.label;
             paymentStatus.className = `text-lg font-semibold ${getStatusColor(data.faktur.status)}`;
+
+
+            // Show download button if status is Terbayar (3) and bukti_path exists
+            if (data.faktur.status === '3' && data.faktur.bukti_path) {
+                downloadSection.classList.remove('hidden');
+                // Store faktur ID for download function
+                window.currentFakturId = data.faktur.id;
+            } else {
+                downloadSection.classList.add('hidden');
+            }
 
             // Show results
             document.getElementById('results').classList.remove('hidden');
@@ -473,6 +488,14 @@
 
                 timeline.appendChild(logElement);
             });
+        }
+
+        function downloadBuktiBayar() {
+            if (window.currentFakturId) {
+                window.open(`/faktur/${window.currentFakturId}/download`);
+            } else {
+                alert('Bukti pembayaran tidak tersedia');
+            }
         }
 
         function formatDateTime(dateTimeString) {

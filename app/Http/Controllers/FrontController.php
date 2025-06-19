@@ -38,12 +38,14 @@ class FrontController extends Controller
                     'whatsapp' => $faktur->distributor->no_telp,
                 ],
                 'faktur' => [
+                    'id' => $faktur->id,
                     'no_faktur' => $faktur->no_faktur,
                     'tgl_faktur' => $faktur->tgl_faktur->format('Y-m-d'),
                     'tgl_jatuh_tempo' => $faktur->tgl_jatuh_tempo->format('Y-m-d'),
                     'tgl_tanda_terima' => $faktur->tgl_tanda_terima?->format('Y-m-d'),
                     'nominal' => $faktur->nominal,
                     'status' => $faktur->status,
+                    'bukti_path' => $faktur->bukti_path,
                     'logs' => $faktur->logs->map(function ($log) {
                         return [
                             'status' => $log->status,

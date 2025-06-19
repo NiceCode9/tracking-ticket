@@ -29,5 +29,6 @@ Route::middleware('auth')->group(function () {
     Route::resource('distributor', DistributorController::class);
     Route::resource('faktur', FakturController::class);
 });
+Route::get('faktur/{faktur}/download', [FakturController::class, 'download'])->name('faktur.download');
 
 require __DIR__ . '/auth.php';

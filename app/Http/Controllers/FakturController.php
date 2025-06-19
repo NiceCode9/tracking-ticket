@@ -8,6 +8,7 @@ use App\Models\LogFaktur;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\DataTables;
 
 class FakturController extends Controller
@@ -155,10 +156,22 @@ class FakturController extends Controller
                         <a href="' . route('faktur.edit', $row->id) . '" class="btn btn-sm btn-warning me-1 btn-edit" data-id="' . $row->id . '">
                             <i class="fas fa-edit"></i>
                         </a>
+                    ';
+
+                    if ($row->bukti_path) {
+                        $btn .= '
+                            <a href="' . route('faktur.download', $row->id) . '" class="btn btn-sm btn-info me-1" title="Download Bukti Bayar">
+                                <i class="fas fa-download"></i>
+                            </a>
+                        ';
+                    }
+
+                    $btn .= '
                         <button type="button" class="btn btn-sm btn-danger btn-delete" data-id="' . $row->id . '">
                             <i class="fas fa-trash"></i>
                         </button>
                     ';
+
                     return $btn;
                 })
                 ->rawColumns(['status', 'action'])
@@ -180,6 +193,51 @@ class FakturController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    // public function store(Request $request)
+    // {
+    //     $request->validate([
+    //         'distributor_id' => 'required|exists:distributors,id',
+    //         'no_faktur' => 'required|unique:fakturs,no_faktur',
+    //         'tgl_faktur' => 'required|date',
+    //         'tgl_jatuh_tempo' => 'required|date',
+    //         'tgl_tanda_terima' => 'required|date',
+    //         'nominal' => 'required|numeric',
+    //         'status' => 'required|in:0,1,2,3',
+    //     ]);
+
+    //     DB::beginTransaction();
+    //     try {
+    //         $data = $request->all();
+
+    //         if ($request->hasFile('bukti_path')) {
+    //             $request->validate([
+    //                 'bukti_path' => 'required|mimes:png,jpg,jpeg|max:2048',
+    //             ]);
+
+    //             $file = $request->file('bukti_path');
+    //             $filename = time() . '_' . $file->getClientOriginalName();
+    //             $file->storeAs('public/bukti', $filename);
+    //             $data['bukti_path'] = $filename;
+    //         }
+
+    //         $faktur = Faktur::create($data);
+
+    //         LogFaktur::create([
+    //             'faktur_id' => $faktur->id,
+    //             'status' => $faktur->status,
+    //             'keterangan' => 'Data di Input dengan status awal ' . $faktur->status_label,
+    //             'user_id' => auth()->id()
+    //         ]);
+
+    //         DB::commit();
+    //         return redirect()->route('faktur.index')->with('success', 'Data faktur berhasil ditambahkan');
+    //     } catch (\Throwable $th) {
+    //         //throw $th;
+    //         DB::rollBack();
+    //         return redirect()->route('faktur.index')->with('error', 'Data faktur gagal ditambahkan');
+    //     }
+    // }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -190,21 +248,18 @@ class FakturController extends Controller
             'tgl_tanda_terima' => 'required|date',
             'nominal' => 'required|numeric',
             'status' => 'required|in:0,1,2,3',
+            'bukti_path' => 'nullable|mimes:png,jpg,jpeg,pdf|max:2048',
         ]);
 
         DB::beginTransaction();
         try {
-            $data = $request->all();
+            $data = $request->except('bukti_path');
 
             if ($request->hasFile('bukti_path')) {
-                $request->validate([
-                    'bukti_path' => 'required|mimes:png,jpg,jpeg|max:2048',
-                ]);
-
                 $file = $request->file('bukti_path');
-                $filename = time() . '_' . $file->getClientOriginalName();
-                $file->storeAs('public/bukti', $filename);
-                $data['bukti_path'] = $filename;
+                $filename = 'bukti_' . time() . '_' . $file->getClientOriginalName();
+                $path = $file->storeAs('bukti', $filename, 'public');
+                $data['bukti_path'] = $path; // Simpan path relatif ke storage
             }
 
             $faktur = Faktur::create($data);
@@ -219,9 +274,12 @@ class FakturController extends Controller
             DB::commit();
             return redirect()->route('faktur.index')->with('success', 'Data faktur berhasil ditambahkan');
         } catch (\Throwable $th) {
-            //throw $th;
             DB::rollBack();
-            return redirect()->route('faktur.index')->with('error', 'Data faktur gagal ditambahkan');
+            // Hapus file jika ada error
+            if (isset($path)) {
+                Storage::disk('public')->delete($path);
+            }
+            return redirect()->route('faktur.index')->with('error', 'Data faktur gagal ditambahkan: ' . $th->getMessage());
         }
     }
 
@@ -245,6 +303,51 @@ class FakturController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    // public function update(Request $request, Faktur $faktur)
+    // {
+    //     $request->validate([
+    //         'distributor_id' => 'required|exists:distributors,id',
+    //         'no_faktur' => 'required|unique:fakturs,no_faktur,' . $faktur->id,
+    //         'tgl_faktur' => 'required|date',
+    //         'tgl_jatuh_tempo' => 'required|date',
+    //         'tgl_tanda_terima' => 'required|date',
+    //         'nominal' => 'required|numeric',
+    //         'status' => 'required|in:0,1,2,3',
+    //     ]);
+
+    //     $data = $request->all();
+
+    //     if ($request->hasFile('bukti_path')) {
+    //         $request->validate([
+    //             'bukti_path' => 'required|mimes:png,jpg,jpeg|max:2048',
+    //         ]);
+
+    //         // Hapus file lama jika ada
+    //         if ($faktur->bukti_path && file_exists(storage_path('app/public/bukti/' . $faktur->bukti_path))) {
+    //             unlink(storage_path('app/public/bukti/' . $faktur->bukti_path));
+    //         }
+
+    //         $file = $request->file('bukti_path');
+    //         $filename = time() . '_' . $file->getClientOriginalName();
+    //         $file->storeAs('public/bukti', $filename);
+    //         $data['bukti_path'] = $filename;
+    //     }
+
+    //     $old_status = $faktur->status;
+    //     $faktur->update($data);
+
+    //     LogFaktur::create([
+    //         'faktur_id' => $faktur->id,
+    //         'status' => $faktur->status,
+    //         'keterangan' => 'Status berubah dari ' .
+    //             Faktur::$statusLabels[$old_status] . ' menjadi ' .
+    //             $faktur->status_label,
+    //         'user_id' => auth()->id()
+    //     ]);
+
+    //     return redirect()->route('faktur.index')->with('success', 'Data faktur berhasil diperbarui');
+    // }
+
     public function update(Request $request, Faktur $faktur)
     {
         $request->validate([
@@ -255,39 +358,49 @@ class FakturController extends Controller
             'tgl_tanda_terima' => 'required|date',
             'nominal' => 'required|numeric',
             'status' => 'required|in:0,1,2,3',
+            'bukti_path' => 'nullable|mimes:png,jpg,jpeg,pdf|max:2048',
         ]);
 
-        $data = $request->all();
+        DB::beginTransaction();
+        try {
+            $data = $request->except('bukti_path');
+            $oldFilePath = $faktur->bukti_path;
 
-        if ($request->hasFile('bukti_path')) {
-            $request->validate([
-                'bukti_path' => 'required|mimes:png,jpg,jpeg|max:2048',
-            ]);
+            if ($request->hasFile('bukti_path')) {
+                // Upload file baru
+                $file = $request->file('bukti_path');
+                $filename = 'bukti_' . time() . '_' . $file->getClientOriginalName();
+                $path = $file->storeAs('bukti', $filename, 'public');
+                $data['bukti_path'] = $path;
 
-            // Hapus file lama jika ada
-            if ($faktur->bukti_path && file_exists(storage_path('app/public/bukti/' . $faktur->bukti_path))) {
-                unlink(storage_path('app/public/bukti/' . $faktur->bukti_path));
+                // Hapus file lama jika ada
+                if ($oldFilePath) {
+                    Storage::disk('public')->delete($oldFilePath);
+                }
             }
 
-            $file = $request->file('bukti_path');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->storeAs('public/bukti', $filename);
-            $data['bukti_path'] = $filename;
+            $old_status = $faktur->status;
+            $faktur->update($data);
+
+            LogFaktur::create([
+                'faktur_id' => $faktur->id,
+                'status' => $faktur->status,
+                'keterangan' => 'Status berubah dari ' .
+                    Faktur::$statusLabels[$old_status] . ' menjadi ' .
+                    $faktur->status_label,
+                'user_id' => auth()->id()
+            ]);
+
+            DB::commit();
+            return redirect()->route('faktur.index')->with('success', 'Data faktur berhasil diperbarui');
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            // Hapus file baru jika ada error
+            if (isset($path)) {
+                Storage::disk('public')->delete($path);
+            }
+            return redirect()->route('faktur.index')->with('error', 'Data faktur gagal diperbarui: ' . $th->getMessage());
         }
-
-        $old_status = $faktur->status;
-        $faktur->update($data);
-
-        LogFaktur::create([
-            'faktur_id' => $faktur->id,
-            'status' => $faktur->status,
-            'keterangan' => 'Status berubah dari ' .
-                Faktur::$statusLabels[$old_status] . ' menjadi ' .
-                $faktur->status_label,
-            'user_id' => auth()->id()
-        ]);
-
-        return redirect()->route('faktur.index')->with('success', 'Data faktur berhasil diperbarui');
     }
 
     /**
@@ -295,12 +408,37 @@ class FakturController extends Controller
      */
     public function destroy(Faktur $faktur)
     {
-        if ($faktur->bukti_path && file_exists(storage_path('app/public/bukti/' . $faktur->bukti_path))) {
-            unlink(storage_path('app/public/bukti/' . $faktur->bukti_path));
+        DB::beginTransaction();
+        try {
+            $filePath = $faktur->bukti_path;
+
+            $faktur->delete();
+
+            // Hapus file jika ada
+            if ($filePath && Storage::disk('public')->exists($filePath)) {
+                Storage::disk('public')->delete($filePath);
+            }
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Faktur berhasil dihapus']);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Gagal menghapus faktur: ' . $th->getMessage()]);
+        }
+    }
+
+    public function download(Faktur $faktur)
+    {
+        if (!$faktur->bukti_path) {
+            return redirect()->back()->with('error', 'Bukti pembayaran tidak tersedia.');
         }
 
-        $faktur->delete();
+        $filePath = storage_path('app/public/' . $faktur->bukti_path);
 
-        return response()->json(['success' => true, 'message' => 'Faktur Berhasil di hapus']);
+        if (!file_exists($filePath)) {
+            return redirect()->back()->with('error', 'File bukti pembayaran tidak ditemukan.');
+        }
+
+        return response()->download($filePath);
     }
 }

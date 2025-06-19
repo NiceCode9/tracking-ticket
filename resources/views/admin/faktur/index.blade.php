@@ -198,6 +198,30 @@
                         nama: 'action',
                         orderable: false,
                         searchable: false,
+                        render: function(data, type, row) {
+                            let buttons = `
+                                <a href="${row.edit_url}" class="btn btn-sm btn-warning me-1 btn-edit" data-id="${row.id}">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            `;
+
+                            // Add download button if bukti_path exists
+                            if (row.bukti_path) {
+                                buttons += `
+                                    <a href="/faktur/${row.id}/download" class="btn btn-sm btn-info me-1" title="Download Bukti Bayar">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                `;
+                            }
+
+                            buttons += `
+                                <button type="button" class="btn btn-sm btn-danger btn-delete" data-id="${row.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            `;
+
+                            return buttons;
+                        }
                     },
                 ]
             });
