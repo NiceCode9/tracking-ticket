@@ -464,10 +464,7 @@
                     ],
                     order: [
                         [2, 'asc']
-                    ], // Default sorting by jatuh tempo
-                    language: {
-                        url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/id.json'
-                    }
+                    ],
                 });
             }
 
