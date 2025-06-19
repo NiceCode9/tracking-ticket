@@ -124,8 +124,8 @@
     <script src="{{ asset('assets') }}/vendor/smooth-scroll/dist/smooth-scroll.polyfills.min.js"></script>
 
     <!-- Charts -->
-    <script src="{{ asset('assets') }}/vendor/chartist/dist/chartist.min.js"></script>
-    <script src="{{ asset('assets') }}/vendor/chartist-plugin-tooltips/dist/chartist-plugin-tooltip.min.js"></script>
+    {{-- <script src="{{ asset('assets') }}/vendor/chartist/dist/chartist.min.js"></script>
+    <script src="{{ asset('assets') }}/vendor/chartist-plugin-tooltips/dist/chartist-plugin-tooltip.min.js"></script> --}}
 
     <!-- Datepicker -->
     <script src="{{ asset('assets') }}/vendor/vanillajs-datepicker/dist/js/datepicker.min.js"></script>

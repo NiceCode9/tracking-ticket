@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Faktur;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Yajra\DataTables\DataTables;
 
 class DashboardController extends Controller
 {
@@ -143,11 +144,40 @@ class DashboardController extends Controller
                 ->whereBetween('tgl_faktur', [$startDate, $endDate])->count(),
         ];
 
+        $chartData = $this->getPiutangChartData($year, $month);
+
+        if ($request->ajax() && $request->has('datatable')) {
+            return DataTables::of($upcomingDueInvoices)
+                ->addColumn('formatted_tgl_jatuh_tempo', function ($invoice) {
+                    return $invoice->tgl_jatuh_tempo->translatedFormat('d F Y');
+                })
+                ->addColumn('status_badge', function ($invoice) {
+                    $badgeClass = [
+                        Faktur::STATUS_BELUM_TERJADWAL => 'bg-secondary',
+                        Faktur::STATUS_TERJADWAL => 'bg-primary',
+                        Faktur::STATUS_JADWAL_ULANG => 'bg-warning',
+                        Faktur::STATUS_TERBAYAR => 'bg-success'
+                    ][$invoice->status];
+
+                    return '<span class="badge ' . $badgeClass . '">' . $invoice->status_label . '</span>';
+                })
+                ->addColumn('formatted_nominal', function ($invoice) {
+                    return 'Rp ' . number_format($invoice->nominal, 0, ',', '.');
+                })
+                ->addColumn('action', function ($invoice) {
+                    return '<a href="/faktur/' . $invoice->id . '/edit" class="btn btn-sm btn-primary"><i class="fas fa-edit"></i></a>';
+                })
+                ->rawColumns(['status_badge', 'action'])
+                ->make(true);
+        }
+
+
         return response()->json([
             'upcomingDueInvoices' => $upcomingDueInvoices,
             'stats' => $stats,
             'period' => $startDate->translatedFormat('F Y'),
             'piutang' => $piutang,
+            'chartData' => $chartData,
             'status_labels' => Faktur::$statusLabels,
             'status_classes' => [
                 Faktur::STATUS_BELUM_TERJADWAL => 'bg-secondary',
@@ -156,5 +186,31 @@ class DashboardController extends Controller
                 Faktur::STATUS_TERBAYAR => 'bg-success'
             ]
         ]);
+    }
+
+    private function getPiutangChartData($year, $month)
+    {
+        $months = [];
+        $totals = [];
+        $paids = [];
+
+        for ($i = 5; $i >= 0; $i--) {
+            $date = Carbon::create($year, $month, 1)->subMonths($i);
+            $start = $date->copy()->startOfMonth();
+            $end = $date->copy()->endOfMonth();
+
+            $months[] = $date->translatedFormat('M Y');
+            $totals[] = Faktur::whereBetween('tgl_faktur', [$start, $end])
+                ->sum('nominal');
+            $paids[] = Faktur::where('status', Faktur::STATUS_TERBAYAR)
+                ->whereBetween('tgl_faktur', [$start, $end])
+                ->sum('nominal');
+        }
+
+        return [
+            'labels' => $months,
+            'total' => $totals,
+            'paid' => $paids
+        ];
     }
 }
