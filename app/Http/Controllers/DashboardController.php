@@ -113,6 +113,16 @@ class DashboardController extends Controller
         $startDate = Carbon::create($year, $month, 1)->startOfMonth();
         $endDate = Carbon::create($year, $month, 1)->endOfMonth();
 
+        $piutang = [
+            'belum_dibayar' => Faktur::where('status', '!=', Faktur::STATUS_TERBAYAR)
+                ->whereBetween('tgl_faktur', [$startDate, $endDate])
+                ->sum('nominal'),
+            'sudah_dibayar' => Faktur::where('status', Faktur::STATUS_TERBAYAR)
+                ->whereBetween('tgl_faktur', [$startDate, $endDate])
+                ->sum('nominal'),
+        ];
+        $piutang['sisa'] = $piutang['belum_dibayar'] - $piutang['sudah_dibayar'];
+
         // Data faktur akan jatuh tempo
         $upcomingDueInvoices = Faktur::where('status', '!=', Faktur::STATUS_TERBAYAR)
             ->whereBetween('tgl_jatuh_tempo', [$startDate, $endDate])
@@ -137,6 +147,7 @@ class DashboardController extends Controller
             'upcomingDueInvoices' => $upcomingDueInvoices,
             'stats' => $stats,
             'period' => $startDate->translatedFormat('F Y'),
+            'piutang' => $piutang,
             'status_labels' => Faktur::$statusLabels,
             'status_classes' => [
                 Faktur::STATUS_BELUM_TERJADWAL => 'bg-secondary',
